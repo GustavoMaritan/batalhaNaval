@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>@model.title</title>
+
+        <style>
+            .divMesa{
+                width: 800px;
+                height: 800px;
+                background: blue;
+                padding: 10px
+            }
+            .divJogador {
+                width: 450px;
+                height: 450px;
+                display: flex;
+                flex-wrap: wrap;
+                background: white;
+            }
+
+            .divJogador > div:nth-child(odd) {
+            }
+
+            .divJogador > div:nth-child(even) {
+            }
+
+            .divQuadrado {
+                min-width: 28px;
+                min-height: 28px;
+                width: 28px;
+                height: 28px;
+                border: 1px solid black;
+            }
+
+            .divPecas{
+                margin-top: 5px;
+                width: 450px;
+                height: 210px;
+                text-align: right;
+            }
+        </style>
+        <script src="js/jquery/dist/jquery.js"></script>
+
+	</head>
+	<body>		
+
+		@html.block('content')
+
+
+	</body>
+</html>

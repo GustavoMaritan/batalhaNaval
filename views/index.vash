@@ -1,0 +1,63 @@
+@html.extend('layout', function(model){
+
+    @html.block('content', function(model){
+
+            <div class="divMesa">
+                <div class="divJogador jogador1">
+                    @model.buffer.forEach(function(obj){
+                        <div class="divQuadrado" 
+                            data-pos="@obj.linha-@obj.coluna">
+                        </div>
+                    })
+                </div>
+                <div class="divPecas">
+                    <button class="btn-pecas pn-porta-aviao">Porta Avião</button>
+                    <button class="btn-pecas pn-fragata">Fragata</button>
+                    <button class="btn-pecas pn-destroyer">Destroyer</button>
+                    <button class="btn-pecas pn-submarino">Submarino</button>
+                    <button class="btn-pecas pn-canoa">Canoa</button>
+                    <button class="botoes pn-iniciar">Iniciar</button>
+                    <button class="botoes pn-cancel">Cancelar</button>
+                </div>
+            </div>
+
+            <script src="js/game/posicionamento.js"></script>
+            <script>
+                let isVertical = true;
+                document.oncontextmenu = document.body.oncontextmenu = function() {return false;}
+                let listPecas = {};
+                const objeto = {
+                    'porta-aviao':{
+                        classe:'porta-aviao',
+                        cor:'green',
+                        construtor: createPecas,
+                        pecas: [1,2,0,-1,-2]
+                    },
+                    fragata:{
+                        classe:'fragata',
+                        cor:'gray',
+                        construtor: createPecas,
+                        pecas: [1,2,0,-1]
+                    },
+                    destroyer:{
+                        classe:'destroyer',
+                        cor:'yellow',
+                        construtor: createPecas,
+                        pecas: [1,0,-1]
+                    },
+                    submarino:{
+                        classe:'submarino',
+                        cor:'black',
+                        construtor: createPecas,
+                        pecas: [1,0,-1]
+                    },
+                    canoa:{
+                        classe:'canoa',
+                        cor:'pink',
+                        construtor: createPecas,
+                        pecas: [1,0]
+                    }
+                }
+            </script>
+    })
+})
