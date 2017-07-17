@@ -19,7 +19,7 @@ app.get('/', (req, res) => {
         }
     }
     res.render('index', {
-        buffer: items
+        tabuleiro: items
     });
 });
 

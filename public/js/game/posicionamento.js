@@ -17,7 +17,8 @@ $('.pn-canoa').click(function () {
 })
 $('.pn-iniciar').hide().click(function () {
     $('[data-ativo]').unbind('click');
-    $('.botoes').slideUp(100)
+    $('.botoes').slideUp(100);
+    $('.attack').show();
 })
 
 function posicionarPecas(config) {

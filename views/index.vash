@@ -2,30 +2,76 @@
 
     @html.block('content', function(model){
 
-            <div class="divMesa">
-                <div class="divJogador jogador1">
-                    @model.buffer.forEach(function(obj){
-                        <div class="divQuadrado" 
-                            data-pos="@obj.linha-@obj.coluna">
-                        </div>
-                    })
+            <style>
+                .conteudo{
+                    width: 100%;
+                    display: -webkit-box;
+                }
+
+                .divModal{
+                    width: 100%;
+                    height: 100%;
+                    position: fixed;
+                    background: rgba(0, 0, 0, 0.55);
+                    z-index: 1000;
+                    padding: 0;
+                    margin: 0;
+                    left: 0;
+                    top: 0;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                }
+
+                .divModal > .divModalContent{
+                    background: white;
+                    width: 50%;
+                    height: 200px;
+                }
+            </style>
+
+            <div class="divModal">
+                <div class="divModalContent">
+                    O JOGADOR VENCEU
                 </div>
-                <div class="divPecas">
-                    <button class="btn-pecas pn-porta-aviao">Porta Avião</button>
-                    <button class="btn-pecas pn-fragata">Fragata</button>
-                    <button class="btn-pecas pn-destroyer">Destroyer</button>
-                    <button class="btn-pecas pn-submarino">Submarino</button>
-                    <button class="btn-pecas pn-canoa">Canoa</button>
-                    <button class="botoes pn-iniciar">Iniciar</button>
-                    <button class="botoes pn-cancel">Cancelar</button>
+            </div>
+
+            <div class="divMesa">
+                <div class="conteudo">
+                    <div class="divJogador jogador1">
+                        @model.tabuleiro.forEach(function(obj){
+                            <div class="divQuadrado" 
+                                data-pos="@obj.linha-@obj.coluna">
+                            </div>
+                        })
+                    </div>
+                    <div class="divJogador attack">
+                        @model.tabuleiro.forEach(function(obj){
+                            <div class="divQuadradoAttack" 
+                                data-pos-atk="@obj.linha-@obj.coluna">
+                            </div>
+                        })
+                    </div>
+                </div>
+                <div class="conteudo">
+                    <div class="divPecas">
+                        <button class="btn-pecas pn-porta-aviao">Porta Avião</button>
+                        <button class="btn-pecas pn-fragata">Fragata</button>
+                        <button class="btn-pecas pn-destroyer">Destroyer</button>
+                        <button class="btn-pecas pn-submarino">Submarino</button>
+                        <button class="btn-pecas pn-canoa">Canoa</button>
+                        <button class="botoes pn-iniciar">Iniciar</button>
+                        <button class="botoes pn-cancel">Cancelar</button>
+                    </div>
                 </div>
             </div>
 
             <script src="js/game/posicionamento.js"></script>
             <script>
-                let isVertical = true;
                 document.oncontextmenu = document.body.oncontextmenu = function() {return false;}
-                let listPecas = {};
+                let isVertical = true,
+                    listPecas = {},
+                    listPecasDestruidas = {};
                 const objeto = {
                     'porta-aviao':{
                         classe:'porta-aviao',
@@ -47,7 +93,7 @@
                     },
                     submarino:{
                         classe:'submarino',
-                        cor:'black',
+                        cor:'#8578ef',
                         construtor: createPecas,
                         pecas: [1,0,-1]
                     },
@@ -58,6 +104,53 @@
                         pecas: [1,0]
                     }
                 }
+
+                $('.divModal').hide();
+                $('.attack').hide();
+                $('.divQuadradoAttack').click(function(){
+                    if(!verificaAtirar(this))
+                        return;
+                    let pos = $(this).attr('data-pos-atk'),
+                        pecaName = $('.jogador1 [data-pos='+pos+']').attr('data-ativo');
+
+                    let acertoTiro = !!$('.jogador1 [data-pos='+pos+'][data-ativo]').length;
+
+                    let cor = 'black';
+                    if(!acertoTiro)
+                        cor = 'blue'
+                    else{
+                        listPecasDestruidas[pecaName] = listPecasDestruidas[pecaName] || [];
+                        listPecasDestruidas[pecaName].push(pos);
+                    }
+
+                    $(this)
+                        .attr('data-ativo','tiro')
+                        .css({ background: cor})
+                        .unbind('click');
+                    $('.jogador1 [data-pos='+pos+']')
+                        .css({ background: cor});
+
+                    if(acertoTiro && verificarVitoria()){
+                        $('.divModal').show();
+                    }
+                });
+
+                function verificaAtirar(obj){
+                    if($(obj).attr('data-ativo'))
+                        return false;
+                    return true;
+                }
+
+                function verificarVitoria(){
+                    let vencedor = [];
+                    for(let i in listPecasDestruidas){
+                        
+                        if(listPecasDestruidas[i].length == objeto[i].pecas.length)
+                            vencedor.push(i);
+                    }
+                    return vencedor.length == 5;
+                }
+
             </script>
     })
 })
