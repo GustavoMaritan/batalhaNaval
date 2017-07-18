@@ -51,7 +51,7 @@
             }
         </style>
         <script src="js/jquery/dist/jquery.js"></script>
-
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script>
 	</head>
 	<body>		
 

@@ -62,11 +62,13 @@
                         <button class="btn-pecas pn-canoa">Canoa</button>
                         <button class="botoes pn-iniciar">Iniciar</button>
                         <button class="botoes pn-cancel">Cancelar</button>
+                        <button class="botoes pn-sock" onclick="attack()">SOck</button>
                     </div>
                 </div>
             </div>
 
             <script src="js/game/posicionamento.js"></script>
+            <script src="js/game/socketIo.js"></script>
             <script>
                 document.oncontextmenu = document.body.oncontextmenu = function() {return false;}
                 let isVertical = true,
