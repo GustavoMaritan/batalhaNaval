@@ -36,7 +36,7 @@ let server = require('http').createServer(app),
 io.to('some room').emit('some event');
 */
 
-let listClients = [],
+let listClients = {},
     salas = [],
     newId = 1;
 
@@ -58,9 +58,7 @@ function eventosPadrao(client) {
     });
     client.on('disconnect', (x) => {
         let id = client.id;
-        listClients.splice(listClients.indexOf(client), 1)
-        console.log(listClients.length);
-        console.log('disconnect:', x);
+        delete listClients[client.id]
     });
     client.on('disconnecting', (data) => {
         console.log('disconnecting: ', data);
@@ -68,15 +66,22 @@ function eventosPadrao(client) {
 }
 
 function eventosJogo(client) {
-    client.on('io-attack', function (msg) {
-        client.emit('io-attack', 'BItch');
+    client.on('io-attack', function (msg) { // {id, pos}
+        let sala = salas.filter(x => x.nome == msg.id)[0];
+        let idJogador = sala.players.filter(x => x != client.id);
+        listClients[idJogador].emit('io-attack', { pos: msg.pos });
+    });
+    client.on('io-res-attack', function (msg) { // {id, pos, acertoTiro, pecaName}
+        let sala = salas.filter(x => x.nome == msg.id)[0];
+        let idJogador = sala.players.filter(x => x != client.id);
+        listClients[idJogador].emit('io-res-attack', msg);
     });
 }
 
 function entrarSala(client) {
-    listClients.push(client);
+    listClients[client.id] = client;
     let novaSala = null;
-    if (!salas.length) {
+    if (!salas.length || salas.filter(x => !!x.disponivel).length % 2 == 0) {
         newId++;
         novaSala = {
             nome: 'sala-' + newId,

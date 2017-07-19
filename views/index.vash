@@ -66,14 +66,28 @@
                     </div>
                 </div>
             </div>
-
+            
             <script src="js/game/posicionamento.js"></script>
             <script src="js/game/socketIo.js"></script>
             <script>
+                socket.on('io-attack', function (posicao) {
+                    console.log('attack', posicao);
+                    receberAtaque(posicao.pos);
+                });
+
+                socket.on('io-res-attack', function (resposta) {
+                    console.log('res-attack', resposta);
+                    confirmarAtaque(resposta.pos, resposta.acertoTiro, resposta.pecaName);
+                });
+            </script>
+            <script>
+                
                 document.oncontextmenu = document.body.oncontextmenu = function() {return false;}
                 let isVertical = true,
                     listPecas = {},
-                    listPecasDestruidas = {};
+                    listPecasDestruidas = {},
+                    listPecasInimigoDestruidas = {};
+
                 const objeto = {
                     'porta-aviao':{
                         classe:'porta-aviao',
@@ -112,30 +126,59 @@
                 $('.divQuadradoAttack').click(function(){
                     if(!verificaAtirar(this))
                         return;
-                    let pos = $(this).attr('data-pos-atk'),
-                        pecaName = $('.jogador1 [data-pos='+pos+']').attr('data-ativo');
+                    let pos = $(this).attr('data-pos-atk');
 
-                    let acertoTiro = !!$('.jogador1 [data-pos='+pos+'][data-ativo]').length;
+                    atacar(pos);
+                });
+                function atacar(posicao){
+                    socket.emit('io-attack', {id : sala.id, pos:posicao});
+                }
+
+                function receberAtaque(posicao){
+                    let pecaName = $('.jogador1 [data-pos='+posicao+']').attr('data-ativo');
+                    let acertoTiro = !!$('.jogador1 [data-pos='+posicao+'][data-ativo]').length;
+
+                    respostaAtaque(posicao, acertoTiro, pecaName);
 
                     let cor = 'black';
                     if(!acertoTiro)
                         cor = 'blue'
                     else{
                         listPecasDestruidas[pecaName] = listPecasDestruidas[pecaName] || [];
-                        listPecasDestruidas[pecaName].push(pos);
+                        listPecasDestruidas[pecaName].push(posicao);
                     }
 
-                    $(this)
+                    $('.jogador1 [data-pos='+posicao+']')
+                        .css({ background: cor});
+                }
+                
+                function respostaAtaque(posicao, acertoTiro, pecaName){
+                    socket.emit('io-res-attack', {
+                        id : sala.id, 
+                        pos: posicao, 
+                        acertoTiro: acertoTiro,
+                        pecaName: pecaName
+                    });
+                }
+
+                function confirmarAtaque(posicao, acertoTiro, pecaName){
+                    let cor = 'black';
+                    if(!acertoTiro)
+                        cor = 'blue'
+                    else{
+                        listPecasInimigoDestruidas[pecaName] = listPecasInimigoDestruidas[pecaName] || [];
+                        listPecasInimigoDestruidas[pecaName].push(posicao);
+                    }
+                    $('[data-pos-atk='+posicao+']')
                         .attr('data-ativo','tiro')
                         .css({ background: cor})
                         .unbind('click');
-                    $('.jogador1 [data-pos='+pos+']')
-                        .css({ background: cor});
 
                     if(acertoTiro && verificarVitoria()){
                         $('.divModal').show();
                     }
-                });
+                }
+
 
                 function verificaAtirar(obj){
                     if($(obj).attr('data-ativo'))
@@ -145,13 +188,14 @@
 
                 function verificarVitoria(){
                     let vencedor = [];
-                    for(let i in listPecasDestruidas){
+                    for(let i in listPecasInimigoDestruidas){
                         
-                        if(listPecasDestruidas[i].length == objeto[i].pecas.length)
+                        if(listPecasInimigoDestruidas[i].length == objeto[i].pecas.length)
                             vencedor.push(i);
                     }
                     return vencedor.length == 5;
                 }
+
 
             </script>
     })
