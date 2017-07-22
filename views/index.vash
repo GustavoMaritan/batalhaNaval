@@ -3,36 +3,45 @@
     @html.block('content', function(model){
 
             <style>
-                .conteudo{
+                .conteudoPainel{
                     width: 100%;
-                    display: -webkit-box;
                 }
-
-                .divModal{
+                .divPecas{
                     width: 100%;
-                    height: 100%;
-                    position: fixed;
-                    background: rgba(0, 0, 0, 0.55);
-                    z-index: 1000;
-                    padding: 0;
-                    margin: 0;
-                    left: 0;
-                    top: 0;
+                    height: 210px;
+                    text-align: right;
+                }
+                .divPainel{
+                    width: 100%;
                     display: flex;
-                    justify-content: center;
-                    align-items: center;
+                    height: 210px;
+                }
+                .pnJogador{
+                    width: 40%;
+                    height: 210px;
+                    border: 4px solid;
+                }
+                .pnPlacar{
+                    width: 20%;
+                    height: 210px;
                 }
 
-                .divModal > .divModalContent{
-                    background: white;
-                    width: 50%;
-                    height: 200px;
+                .pnHead{
+                    width: 97%;
+                    height: 37px;
+                    font-size: 29px;
+                    text-align: center;
+                    padding: 5px;
+                }
+                .pnBody{
+                    width: 100%;
+                    height: 160px;
                 }
             </style>
 
             <div class="divModal">
                 <div class="divModalContent">
-                    O JOGADOR VENCEU
+                    <span id="spModal"></span>
                 </div>
             </div>
 
@@ -53,7 +62,7 @@
                         })
                     </div>
                 </div>
-                <div class="conteudo">
+                <div class="conteudoPainel">
                     <div class="divPecas">
                         <button class="btn-pecas pn-porta-aviao">Porta Avião</button>
                         <button class="btn-pecas pn-fragata">Fragata</button>
@@ -62,27 +71,34 @@
                         <button class="btn-pecas pn-canoa">Canoa</button>
                         <button class="botoes pn-iniciar">Iniciar</button>
                         <button class="botoes pn-cancel">Cancelar</button>
-                        <button class="botoes pn-sock" onclick="attack()">SOck</button>
+                    </div>
+                    <div class="divPainel">
+                        <div class="pnJogador" data-num="1">
+                            <div class="pnHead">
+                                Jogador 1
+                            </div>
+                            <div class="pnBody">
+                            </div>
+                        </div>
+                        <div class="pnPlacar"></div>
+                        <div class="pnJogador" data-num="2">
+                            <div class="pnHead">
+                                Jogador 2
+                            </div>
+                            <div class="pnBody">
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             
             <script src="js/game/posicionamento.js"></script>
             <script src="js/game/socketIo.js"></script>
-            <script>
-                socket.on('io-attack', function (posicao) {
-                    console.log('attack', posicao);
-                    receberAtaque(posicao.pos);
-                });
-
-                socket.on('io-res-attack', function (resposta) {
-                    console.log('res-attack', resposta);
-                    confirmarAtaque(resposta.pos, resposta.acertoTiro, resposta.pecaName);
-                });
-            </script>
+            <script src="js/game/attack.js"></script>
+            <script src="js/game/jogo.js"></script>
             <script>
                 
-                document.oncontextmenu = document.body.oncontextmenu = function() {return false;}
+                document.oncontextmenu = document.body.oncontextmenu = function() { return false; }
                 let isVertical = true,
                     listPecas = {},
                     listPecasDestruidas = {},
@@ -120,83 +136,14 @@
                         pecas: [1,0]
                     }
                 }
-
-                $('.divModal').hide();
-                $('.attack').hide();
+                $('.divPainel').hide();
                 $('.divQuadradoAttack').click(function(){
-                    if(!verificaAtirar(this))
-                        return;
+                    if(novoJogo.jogadorVez != novoJogo.jogador) return;
+                    if($(this).attr('data-ativo')) return;
                     let pos = $(this).attr('data-pos-atk');
-
+                    alterarJogadorVez(novoJogo.jogadorVez == 2 ? 1 : 2);
                     atacar(pos);
                 });
-                function atacar(posicao){
-                    socket.emit('io-attack', {id : sala.id, pos:posicao});
-                }
-
-                function receberAtaque(posicao){
-                    let pecaName = $('.jogador1 [data-pos='+posicao+']').attr('data-ativo');
-                    let acertoTiro = !!$('.jogador1 [data-pos='+posicao+'][data-ativo]').length;
-
-                    respostaAtaque(posicao, acertoTiro, pecaName);
-
-                    let cor = 'black';
-                    if(!acertoTiro)
-                        cor = 'blue'
-                    else{
-                        listPecasDestruidas[pecaName] = listPecasDestruidas[pecaName] || [];
-                        listPecasDestruidas[pecaName].push(posicao);
-                    }
-
-                    $('.jogador1 [data-pos='+posicao+']')
-                        .css({ background: cor});
-                }
-                
-                function respostaAtaque(posicao, acertoTiro, pecaName){
-                    socket.emit('io-res-attack', {
-                        id : sala.id, 
-                        pos: posicao, 
-                        acertoTiro: acertoTiro,
-                        pecaName: pecaName
-                    });
-                }
-
-                function confirmarAtaque(posicao, acertoTiro, pecaName){
-                    let cor = 'black';
-                    if(!acertoTiro)
-                        cor = 'blue'
-                    else{
-                        listPecasInimigoDestruidas[pecaName] = listPecasInimigoDestruidas[pecaName] || [];
-                        listPecasInimigoDestruidas[pecaName].push(posicao);
-                    }
-                    $('[data-pos-atk='+posicao+']')
-                        .attr('data-ativo','tiro')
-                        .css({ background: cor})
-                        .unbind('click');
-
-                    if(acertoTiro && verificarVitoria()){
-                        $('.divModal').show();
-                    }
-                }
-
-
-                function verificaAtirar(obj){
-                    if($(obj).attr('data-ativo'))
-                        return false;
-                    return true;
-                }
-
-                function verificarVitoria(){
-                    let vencedor = [];
-                    for(let i in listPecasInimigoDestruidas){
-                        
-                        if(listPecasInimigoDestruidas[i].length == objeto[i].pecas.length)
-                            vencedor.push(i);
-                    }
-                    return vencedor.length == 5;
-                }
-
-
             </script>
     })
 })

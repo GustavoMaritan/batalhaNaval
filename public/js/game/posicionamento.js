@@ -16,9 +16,7 @@ $('.pn-canoa').click(function () {
     posicionarPecas(objeto.canoa);
 })
 $('.pn-iniciar').hide().click(function () {
-    $('[data-ativo]').unbind('click');
-    $('.botoes').slideUp(100);
-    $('.attack').show();
+    iniciarJogo();
 })
 
 function posicionarPecas(config) {

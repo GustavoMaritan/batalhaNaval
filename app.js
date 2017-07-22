@@ -4,6 +4,7 @@ const express = require('express'),
     bodyParser = require('body-parser'),
     fs = require('fs');
 
+require('devbox-linq');
 app.set('views', path.join(__dirname, '/views'));
 app.set('view engine', 'vash');
 app.use(bodyParser.json());
@@ -24,25 +25,13 @@ app.get('/', (req, res) => {
 
 let server = require('http').createServer(app),
     io = require('socket.io')(server);
-/*
-{
-    path: '/test',
-    serveClient: false,
-    // below are engine.IO options
-    pingInterval: 10000,
-    pingTimeout: 5000,
-    cookie: false
-}
-io.to('some room').emit('some event');
-*/
 
 let listClients = {},
     salas = [],
-    newId = 1;
+    newId = 0;
 
 io.on('connection', (client) => {
     let handshake = client.handshake; // dados client
-    io.emit('all', 'FUCY YOU');
     eventosPadrao(client);
     eventosJogo(client);
     entrarSala(client);
@@ -66,16 +55,62 @@ function eventosPadrao(client) {
 }
 
 function eventosJogo(client) {
-    client.on('io-attack', function (msg) { // {id, pos}
-        let sala = salas.filter(x => x.nome == msg.id)[0];
-        let idJogador = sala.players.filter(x => x != client.id);
-        listClients[idJogador].emit('io-attack', { pos: msg.pos });
+    client.on('io-attack', (sala, posicao) => {
+        let idOutro = getJogador(client.id, sala);
+        listClients[idOutro].emit('io-attack', { pos: posicao.pos });
     });
-    client.on('io-res-attack', function (msg) { // {id, pos, acertoTiro, pecaName}
-        let sala = salas.filter(x => x.nome == msg.id)[0];
-        let idJogador = sala.players.filter(x => x != client.id);
-        listClients[idJogador].emit('io-res-attack', msg);
+    client.on('io-res-attack', (sala, infos) => { // {pos, acertoTiro, pecaName}
+        let idOutro = getJogador(client.id, sala);
+        listClients[idOutro].emit('io-res-attack', infos);
     });
+    client.on('io-iniciar-jogo', (sala) => {
+        sala.players[client.id].pronto = true;
+        let outroId = getJogador(client.id, sala);
+
+        if (sala.players[client.id].pronto && sala.players[outroId].pronto)
+            sala.iniciado = true;
+
+        if (!sala.iniciado) {
+            io.to(sala.id).emit('io-iniciar-aguarde', sala);
+            return client.emit('io-modal-aguarde');
+        }
+
+        sala.rodada++;
+        let novoJogo = {
+            jogadorVez: jogadorVez(sala.rodada),
+            jogador: 0
+        };
+
+        getIds(sala).map(x => {
+            novoJogo.jogador = x.jogador;
+            listClients[x.id].emit('io-iniciar-jogo', sala, novoJogo);
+        });
+    });
+    client.on('io-alterar-jogadorVez', (sala, jogadorVez) => {
+        io.to(sala.id).emit('io-alterar-jogadorVez', jogadorVez);
+    });
+}
+
+function getJogador(id, sala) {
+    for (let i in sala.players) {
+        if (sala.players[i].id != sala.players[id].id)
+            return i;
+    }
+}
+
+function getIds(sala) {
+    let ids = [];
+    for (let i in sala.players) {
+        ids.push({
+            id: i,
+            jogador: sala.players[i].id,
+        });
+    }
+    return ids;
+}
+
+function jogadorVez(rodada) {
+    return rodada % 2 == 0 ? 2 : 1;
 }
 
 function entrarSala(client) {
@@ -85,14 +120,22 @@ function entrarSala(client) {
         newId++;
         novaSala = {
             nome: 'sala-' + newId,
-            players: [client.id],
+            players: {
+                [client.id]: {
+                    id: 1,
+                    pronto: false
+                }
+            },
             disponivel: true
         }
         salas.push(novaSala);
     } else {
         salas.map((x, i) => {
             if (x.disponivel) {
-                x.players.push(client.id);
+                x.players[client.id] = {
+                    id: 2,
+                    pronto: false
+                };
                 x.disponivel = false;
                 novaSala = x;
                 return;
@@ -101,9 +144,12 @@ function entrarSala(client) {
     }
     client.join(novaSala.nome);
 
-    if (novaSala.players.length == 1) {
+    if (Object.keys(novaSala.players).length == 1) {
         client.emit('io-aguarde', { id: novaSala.nome });
     } else {
-        io.to(novaSala.nome).emit('io-start', { id: novaSala.nome });
+        io.to(novaSala.nome).emit('io-start', {
+            id: novaSala.nome,
+            players: novaSala.players
+        });
     }
 }
